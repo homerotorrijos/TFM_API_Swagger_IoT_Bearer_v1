@@ -1,0 +1,182 @@
+
+<div class="tokens">
+    <h3>Incio de sesión</h3>
+
+    <form class="form" id="login" method="post">
+        <label>Usuario</label>
+        
+        <input id="setNull" type="email" name="email" value="" placeholder="Correo">
+        
+        <label >Contraseña</label>
+     
+        <input id="setNullPass" type="password" name="password" value="" placeholder="Contraseña">
+       
+        <input type="submit" value="Iniciar sesión">
+    </form>
+
+</div>
+
+ <div class="tokens">
+    <h3>Access token</h3>
+        <textarea id="acctoken" rows="2" cols="" name="comment" form="usrform"></textarea>
+    <h3>Refresh token</h3>
+        <textarea id="reftoken" rows="2" cols="" name="comment" form="usrform"></textarea>
+</div>
+
+<div class="tokens">
+    <h3>Cerrar Sesión</h3>
+    <form class="form" id="logout" method="post">
+        <label for="accessToken">Refresh Token</label>
+        <input id="setNullLogout" type="password" name="refreshToken" value="" placeholder="refreshToken">
+        <input type="submit" value="Enviar">
+    </form>
+</div>
+
+<div class="tokens">
+    <h3>Generar token de acceso</h3>
+    <form class="form" id="genAccessTokens" method="post">
+        <label for="refreshToken">Refresh Token</label>
+        <input id="setNull" type="password" name="refreshToken" value="" placeholder="refreshToken">
+        <input type="submit" value="Enviar">
+    </form>
+    <h3>Access token</h3>
+        <textarea id="newAcctoken" rows="2" cols="" name="comment" form="usrform"></textarea>
+</div>
+
+
+<script type="text/javascript">
+    const formLogout = document.querySelector('#logout')              // Objeto de JavaScript para el navegador, toma todos los valores tipo input
+    
+    
+    formLogout.addEventListener('submit', event =>{
+        
+        const formData = new FormData(formLogout)                                                  
+        const params = new URLSearchParams()
+
+        for(const pair of formData){
+            params.append(pair[0], pair[1])
+        }
+
+        event.preventDefault()                                                              // Hace que no se recargue la página
+        fetch('/api/v1/logout', {                                                           //  Tipo POST 
+            method: 'POST',
+            headers: {
+                "Content-type": "application/x-www-form-urlencoded; charset=UTF-8"
+            },
+            body: params
+        })
+        .then(res => res.json())
+        .then(data =>{
+            if(data.refreshToken == 0){
+                alert('No has iniciado sesión')
+            }else if(data.refreshToken == 1){
+                alert('Has cerrado sesión')
+                document.getElementsById('setNullLogout').value = ''
+            }
+                                                                       
+            //toma el token y lo imprime una vez autenticado
+        })
+        .catch(function (error) {
+            console.log('Request failed', error);
+        })
+    })
+
+</script>
+
+<script type="text/javascript">
+    const formLogin = document.querySelector('#login')              // Objeto de JavaScript para el navegador, toma todos los valores tipo input
+   
+    formLogin.addEventListener('submit', event =>{
+        const formData = new FormData(formLogin)                                                  
+        const params = new URLSearchParams()
+
+
+        for(const pair of formData){
+            params.append(pair[0], pair[1])
+        }
+
+        event.preventDefault()                                                              // Hace que no se recargue la página
+        fetch('/api/v1/login', {                                                           //  Tipo POST 
+            method: 'POST',
+            headers: {
+                "Content-type": "application/x-www-form-urlencoded; charset=UTF-8"
+            },
+            body: params
+        })
+        .then(res => res.json())
+        .then(data =>{
+            if(data.Usuario == 0){
+                alert('El usuario no existe')
+                document.getElementsById('setNull').value = ''
+                document.getElementsById('setNullPass').value = ''
+            } if(data.Usuario == 3){
+                alert('El usuario esta bloqueado')
+                document.getElementsById('setNull').value = ''
+                document.getElementsById('setNullPass').value = ''
+            }
+            else if(data.Credencial == 0){
+                alert('Credenciales incorrectas')
+                document.getElementById('setNull').value = ''
+            }
+            else if(data.Conectado == 1){
+                alert('Usuario actualmente logeado')
+                document.getElementById("acctoken").innerHTML  = ''
+                document.getElementById("reftoken").innerHTML  = ''
+            }else{
+                document.getElementById("acctoken").innerHTML  = ''
+                document.getElementById("reftoken").innerHTML  = ''
+                document.getElementById("acctoken").innerHTML  = data.accessToken
+                document.getElementById("reftoken").innerHTML = data.refreshToken
+                localStorage.setItem('accessToken', data.accessToken)
+            }
+            
+            console.log(data)                                                               //toma el token y lo imprime una vez autenticado
+        })
+        .catch(function (error) {
+            console.log('Falla la solicitud', error);
+        })
+    })
+
+
+
+</script>
+
+<script type="text/javascript">
+    const formgenAccessTokens = document.querySelector('#genAccessTokens')              // Objeto de JavaScript para el navegador, toma todos los valores tipo input
+    
+    
+    formgenAccessTokens.addEventListener('submit', event =>{
+        
+        const formData = new FormData(genAccessTokens)                                                  
+        const params = new URLSearchParams()
+
+        for(const pair of formData){
+            params.append(pair[0], pair[1])
+            console.log(pair[0], pair[1])
+        }
+        
+        event.preventDefault()                                                              // Hace que no se recargue la página
+        fetch('/api/v1/token', {                                                           //  Tipo POST 
+            method: 'POST',
+            headers: {
+                "Content-type": "application/x-www-form-urlencoded; charset=UTF-8"
+            },
+            body: params
+        })
+        .then(res => res.json())
+        .then(data =>{
+            if(data.refreshToken == 0){
+                alert('No existe el refreshToken')
+            }else if (data.refreshToken == 1){
+                document.getElementById("newAcctoken").innerHTML  = ''
+                document.getElementById("newAcctoken").innerHTML  = data.accessToken
+            }
+                                                 
+            //toma el token y lo imprime una vez autenticado
+        })
+        .catch(function (error) {
+            console.log('Request failed', error);
+        })
+    })
+
+</script>

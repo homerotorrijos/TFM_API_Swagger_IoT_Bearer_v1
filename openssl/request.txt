@@ -1,0 +1,36 @@
+[req]
+default_bits           = 2048
+prompt                 = no
+default_md             = sha384
+req_extensions         = req_ext
+distinguished_name     = req_distinguished_name
+
+[req_distinguished_name]
+countryName            = MX
+stateOrProvinceName    = México
+organizationName       = Industrial Internet of Things Network
+organizationalUnitName = IoT Development
+commonName             = Homero Torrijos
+emailAddress           = homertoch@hotmail.com	
+
+[req_ext]
+subjectAltName         = @alt_names
+subjectKeyIdentifier   = hash
+keyUsage               = digitalSignature, keyEncipherment
+nsComment              = "OpenSSL Generated Certificate"
+
+[alt_names]
+
+DNS.1       = iotforceapi.com
+DNS.2       = www.iotforceapi.com
+DNS.3       = mail.iotforceapi.com
+DNS.4       = ftp.iotforceapi.com
+
+# Add these if you need them. But usually you don't want them or
+#   need them in production. You may need them for development.
+DNS.5       = localhost
+DNS.6       = localhost.localdomain
+DNS.7       = 127.0.0.1
+
+# IPv6 localhost
+DNS.8     = ::1

@@ -1,0 +1,31 @@
+<script type="text/javascript">
+    let sensortagList = document.createElement('ul')
+    const myheaders = new Headers()
+    
+    
+    myheaders.append('authorization', `Bearer ${localStorage.accessToken}`)
+
+    console.log(localStorage.accessToken)
+    
+    fetch('/api/v1/sensortag',{
+        method: 'GET',
+        headers: myheaders,
+
+    })
+    .then(res => res.json())
+    .then(data => {
+        console.log(data)
+    })
+</script>
+
+
+{{ data.sensortag.map(sensortag =>{
+            let text = document.createTextNode(sensortag.sensorTag)
+            let elem = document.createElement('li')
+            elem.appendChild(text)
+            sensortagList.appendChild(elem)
+        })
+
+        document.body.appendChild(sensortagList)
+        }
+    }

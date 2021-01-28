@@ -1,0 +1,28 @@
+
+
+<form id="login" method="post">
+    <input type="email" name="email" value="" placeholder="Correo">
+    <br><br>
+    <input type="password" name="password" value="" placeholder="Contraseña">
+    <br><br>
+    <input type="submit" value="Iniciar">
+
+</form>
+
+<script type="text/javascript">
+    const formLogin = document.querySelector('#login')
+    const formData = new FormData(formLogin)                                                // Objeto de JavaScript para el navegador, toma todos los valores tipo input
+    
+    formLogin.addEventListener('submit', event =>{
+        event.preventDefault()                                                              // Hace que no se recargue la página
+        fetch('/accessControl', {                                                           //  Tipo GET 
+            method: 'POST', 
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data =>{  
+            localStorage.setItem('token', data.token)
+            console.log(data)                                                               //toma el token y lo imprime una vez autenticado
+        })
+    })
+</script>

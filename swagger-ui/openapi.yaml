@@ -1,0 +1,837 @@
+---
+openapi: 3.0.0
+info:
+  title: SensorTag IoT API
+  description: >-
+    API documentada con Swagger usando OpenAPI 3.0.0. con Autenticación Bearer JWT. Desarralla usando NodeJS y el Framework Express de la paquetería de NPM.
+    
+    
+    Documentación extra:
+    
+    - [OpenAPI Specitification V 3.0.0](https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.3.md#format)
+    
+    - [NPM](https://www.npmjs.com/)
+    
+    - [MongoDB](https://www.mongodb.com/)
+    
+    
+    
+    
+  termsOfService: 'http://swagger.io/terms/'
+  contact:
+    name: 'Homero Torrijos'
+    url:  'https://www.linkedin.com/in/homerotorrijos/'
+    email: 'homertor@ucm.es'
+  license:
+    name: MIT Licence
+    url: 'https://opensource.org/licenses/MIT'
+  version: "1.0.0"
+externalDocs:
+  description: Más sobre Swagger
+  url: http://swagger.io
+servers:
+  - url: https://localhost:3005/
+    description: Certificado SSL
+  - url: http://localhost:3005/
+    description: Sin certificado SSL
+tags:
+  - name: Users
+    description: Registro, Consulta y Sesión
+    externalDocs:
+      description: Autenticación
+      url: https://127.0.0.1:3005/api/v1/users
+  - name: Sensor
+    description: Sensor CC2650
+    externalDocs:
+      description: Datos sensados
+      url: https://127.0.0.1:3005/api/v1/sensortag
+
+    
+paths:
+  
+  
+  /api/v1/signup:
+    post:
+      summary: Crea un usuario
+      description: Genera un registro nuevo, diferenciandolo del correo electronico
+      operationId: user
+      tags:
+        - Users
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                email:    
+                  type: string
+                  example: juan@hotmail.com
+                  description: 'Correo electronico a registrar único'
+                name:          
+                  type: string
+                  example: Juan Lopez
+                  description: 'Nombre del usuario'
+                password:
+                  type: string
+                  format: password
+                  description: '+4$3#iqwe'
+                role:    
+                  type: string
+                  example: admin
+                  enum:
+                    - admin
+                    - user
+                    - guest
+              required:
+                - name
+                - email
+                - password
+                - role
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUser'
+      responses:
+        '201':
+          description: Usuario registradso en MongoDB.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRegister'
+        
+        '500':
+          description: Error al crear el usuario
+  /api/v1/login:
+    post:
+      summary: Se identifica el usuario
+      description: Obtiene un Token de Autenticación para sus solicitudes
+      operationId: login
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                email:    
+                  type: string
+                  example: mail@mail.com
+                  description: 'Correo electronico registrado'
+                password:
+                  type: string
+                  format: password
+                  example: '+4$3#iqwe'
+                  description: 'Contraseña registrada'
+              required:
+                - email
+                - password
+            encoding:
+              color:            # color=red,green,blue
+                style: form
+                explode: false
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserAuth'
+      responses:
+        '200':
+          description: Obtención  accessToken y el refreshToken único para caa usuario este les permite generar más accessToken (Token de acceso que expiran cada 7 minutos). Esta respuesta la devuelve si el logeo es por primera vez.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPassAuth'
+        '401':
+          description: No tienes autorización
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotAuthentication'
+        '500':
+          description: 'Error interno'
+      deprecated: false
+  /api/v1/refreshTokens:
+    get:
+      summary: Muestra los refreshTokens 
+      description: Lista los refreshTokens con un id_user que se ha logeado correctamente. Esto solo lo pueden ver los administradores
+      operationId: getRefreshTokens
+      security: 
+        - bearerAuth: []
+      tags:
+        - Users
+      responses:
+        '200':
+          description: Muestra los usuarios.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/refreshToken'
+        '404':
+          description: No existe el recurso
+        '500':
+          description: Error al hacer petición
+  /api/v1/refreshTokens/{refreshTokenId}:
+    delete:
+      summary: Elimina un registro con el id del refreshToken
+      description: Con el _id generado en la base de datos en MongoDB se elimina un registro. Esto solo lo pueden hacer los administradores
+      operationId: refreshTokenId
+      security:
+        - bearerAuth: []
+      tags:
+        - Users
+      parameters:
+        - $ref: '#/components/parameters/ParamRefreshTokenId'
+      responses:
+        '200':
+          description: El refreshToken ha sido eliminado
+        '403':
+          description: Sin autorización
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotAuthentication'
+        '500':
+          description: Error al borrar el refreshToken
+  /api/v1/token:
+    post:
+      summary: Devuelve un token de acceso.
+      description: Necesitar tener un pocesión de tu Token de refresco.
+      operationId: createToken
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  description: Token de refresco generado por el sistema la primera vez que se logeo.
+                  type: string
+                  example: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1ZjNmNjI2MWY0YzZhMzc5MWM2Yjg0YmMiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE1OTc5OTAwMzV9.MkwVp_wBCFZV5A3uBIb_W87an1DdKtyjsNUsEy04-C4'
+              required:
+                - refreshToken
+            encoding:
+              color:            # color=red,green,blue
+                style: form
+                explode: false
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Token'  
+      
+      #parameters:
+      #  - $ref: '#/components/parameters/ParamSensorTag'
+      #  - $ref: '#/components/parameters/ParamSensorValor'
+      #  - $ref: '#/components/parameters/ParamSensor'
+      #  - $ref: '#/components/parameters/ParamSensorDate'
+      
+      responses:
+        '200':
+          description: Muestra el sensor registrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseToken'
+        '403':
+          description: No tienes autorización
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotAuthentication'
+        '404':
+          description: refreshToken no encontrado
+        '500':
+          description: Error al hacer petición
+      
+  /api/v1/logout:
+    post:
+      summary: Elimina el Token de refresco (refreshToken)
+      description: Esto permite no generar más tokens de acceso y es necesario contar con este.
+      operationId: logout
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+               refreshToken:
+                  description: Token de refresco generado por el sistema la primera vez que se logeo.
+                  type: string
+                  example: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1ZjNmNjI2MWY0YzZhMzc5MWM2Yjg0YmMiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE1OTc5OTAwMzV9.MkwVp_wBCFZV5A3uBIb_W87an1DdKtyjsNUsEy04-C4'
+              required:
+                - refreshToken
+            encoding:
+              color:            # color=red,green,blue
+                style: form
+                explode: false
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Logout'  
+      
+      #parameters:
+      #  - $ref: '#/components/parameters/ParamSensorTag'
+      #  - $ref: '#/components/parameters/ParamSensorValor'
+      #  - $ref: '#/components/parameters/ParamSensor'
+      #  - $ref: '#/components/parameters/ParamSensorDate'
+      
+      responses:
+        '200':
+          description: Muestra el sensor registrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseLogout'
+        '403':
+          description: No tienes autorización
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotAuthentication'
+        '404':
+          description: No existe el recurso
+        '500':
+          description: Error al hacer petición
+  /api/v1/users:
+    get:
+      summary: Muestra los usuarios registrados
+      description: Muestra todos los usuarios
+      operationId: getUsers
+      security: 
+        - bearerAuth: []
+      tags:
+        - Users
+      responses:
+        '200':
+          description: Muestra los usuarios.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '403':
+          description: No tienes autorización
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotAuthentication'
+        '404':
+          description: No existe el recurso
+        '500':
+          description: Error al hacer petición   
+  /api/v1/sensortag:
+    get:
+      summary: Obtiene todos los sensores
+      description: Muestra cada sensor con sus lecturas correspondientes
+      operationId: getSensors
+      #deprecated: true
+      security:
+        - bearerAuth: []
+      
+      tags:
+        - Sensor
+      responses:
+        '200':
+          description: Muestra los usuarios.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Sensor'
+        '403':
+          description: No tienes autorización
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotAuthentication'
+        '404':
+          description: No existe el recurso
+        '500':
+          description: Error al hacer petición
+    post:
+      summary: Registro de nuevos valores sensados
+      description: Estos valores son registrados a través de un cliente REST.
+      operationId: createSensor
+      security:
+        - bearerAuth: []
+      tags:
+        - Sensor
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                sensorTag:          
+                  type: string
+                  example: sensortag_cc2650
+                valor:    
+                  type: string
+                  example: 24.5
+                sensor:
+                  type: string
+                  example: pre
+                fecha:
+                  type: string
+                  format: date-time
+                  example: 2020-09-04T22:00:00.000Z
+              required:
+                - sensorTag
+                - valor
+                - sensor
+                - fecha
+            encoding:
+              color:            # color=red,green,blue
+                style: form
+                explode: false
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Sensor'  
+      
+      #parameters:
+      #  - $ref: '#/components/parameters/ParamSensorTag'
+      #  - $ref: '#/components/parameters/ParamSensorValor'
+      #  - $ref: '#/components/parameters/ParamSensor'
+      #  - $ref: '#/components/parameters/ParamSensorDate'
+      
+      responses:
+        '200':
+          description: Muestra el sensor registrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseSensor'
+        '403':
+          description: No tienes autorización
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotAuthentication'
+        '404':
+          description: No existe el recurso
+        '500':
+          description: Error al hacer petición
+  /api/v1/sensortag/{sensortagId}:
+    get:
+      summary: Obtiene datos de un Sensortag
+      description: Obtain detailed information on a single account
+      operationId: sensortagId
+      security:
+        - bearerAuth: []
+      tags:
+        - Sensor
+      parameters:
+        - $ref: '#/components/parameters/ParamSensorID'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SensorID'
+        '403':
+          description: No tienes autorización
+        '404':
+          description: No existe el recurso
+        '500':
+          description: Error al hacer petición
+    put:
+      summary: Actualiza un registro con el Id del Sensortag
+      description: Obtain detailed information on a single account
+      security:
+        - bearerAuth: []
+      tags:
+        - Sensor
+      parameters:
+        - $ref: '#/components/parameters/ParamSensorID'
+        - $ref: '#/components/parameters/ParamSensorTag'
+        - $ref: '#/components/parameters/ParamSensor'
+        - $ref: '#/components/parameters/ParamSensorValor'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SensorID'
+        '403':
+          description: No tienes autorización
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotAuthentication'
+        '500':
+          description: Error al hacer petición
+    delete:
+      summary: Elimina un registro con el Id del Sensortag
+      description: Con el _id generado en la base de datos en MongoDB se elimina un registro.
+      security:
+        - bearerAuth: []
+      tags:
+        - Sensor
+      parameters:
+        - $ref: '#/components/parameters/ParamSensorID'
+      responses:
+        '200':
+          description: El sensorTag ha sido eliminado
+        '403':
+          description: Sin autorización
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotAuthentication'
+        '500':
+          description: Error al borrar el sensor
+
+components:
+  requestBodies:
+    People:
+      description: Esquema del usuario
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CreateUser'
+    Sensor:
+      description: A People or list of People documents
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CreateUser'
+  parameters:
+    ParamUserEmail:
+      name: email
+      in: query
+      description: >-
+        Correo electrónico único a registrar.
+      required: true
+      schema:
+        type: string
+    ParamUserName:
+      name: name
+      in: query
+      description: >-
+        Correo electrónico único a registrar.
+      required: true
+      schema:
+        type: string
+    ParamUserPwd:
+      name: password
+      in: query
+      description: >-
+        Correo electrónico único a registrar.
+      required: true
+      schema:
+        type: string
+    ParamSensorTag:
+      name: sensorTag
+      in: query
+      description: id del Sensortag.
+      required: true
+      schema:
+        type: string
+        example: sensortag_cc2650
+    ParamSensor:
+      name: sensor
+      in: query
+      description: ID del sensor temperatura(tem), humedad(hum), luminosidad(lum), presión(pre).
+      required: true
+      schema:
+        type: string
+        example: lum
+    ParamSensorValor:
+      name: valor
+      in: query
+      description: Lectura del sensor.
+      required: true
+      schema:
+        type: number
+        example: 12.4
+    ParamSensorDate:
+      name: fecha
+      in: query
+      description: Fecha en el cuál fue registrado.
+      required: true
+      schema:
+        type: string
+        format: DateTimeString
+    ParamSensorID:
+        name: sensortagId
+        in: path
+        description: >-
+          _id del sensor registrado en la base de datos en MongoDB
+        required: true
+        schema:
+          type: string
+          format: ASCIIString
+          example: '5eb6176ad71d2e0da86f8d62'
+    ParamRefreshTokenId:
+        name: refreshTokenId
+        in: path
+        description: >-
+          _id registrado en la base de datos en MongoDB
+        required: true
+        schema:
+          type: string
+          format: ASCIIString
+          example: '5eb6176ad71d2e0da86f8d62'
+  schemas:
+     ResponseLogout:
+       properties:
+        Mensaje:
+          example: 'El refreshToken ha sido eliminado'
+          type: string
+     Logout:
+      properties:
+       refreshToken:
+          description: Token de refresco generado por el sistema la primera vez que se logeo.
+          type: string
+          example: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1ZjNmNjI2MWY0YzZhMzc5MWM2Yjg0YmMiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE1OTc5OTAwMzV9.MkwVp_wBCFZV5A3uBIb_W87an1DdKtyjsNUsEy04-C4'
+     ResponseToken:
+       properties:
+        Mensaje:
+          example: 'Este es tu accessToken'
+          type: string
+        accessToken:
+          description: Token único por usuario
+          example: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1ZjNlMjFjMmVlYjU0MDc3OGMyZTYzOWEiLCJyb2xlIjoiZ3Vlc3QiLCJpYXQiOjE1OTgyODI2NTgsImV4cCI6MTU5ODMwNzg1OH0.scjKA44uTw81OW-iZCEhWGHXSzgyWr7Kg6CfusB80hc'
+          type: string
+     Token:
+      properties:
+        refreshToken:
+          description: Token único por usuario
+          example: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1ZjNlMjFjMmVlYjU0MDc3OGMyZTYzOWEiLCJyb2xlIjoiZ3Vlc3QiLCJpYXQiOjE1OTc5ODY4NzR9.qmTvGO7rtrzNveFH4v-Ugs-blzUVLp5HFC-Q69kYQx0'
+          type: string
+     refreshToken:
+      properties:
+        _id:
+          description: _id asignado por MongoDB
+          example: '5f3f583a50ad8a74b4845e1c'
+          type: string
+        id_user:
+          description: id_ del usario
+          example: '5f3f6261f4c6a3791c6b84bc'
+          type: string
+        refreshToken:
+          description: Token de refresco para crear nuevos tokens de acceso (accessTokens)
+          type: string
+          example: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1ZjNmNjI2MWY0YzZhMzc5MWM2Yjg0YmMiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE1OTc5OTAwMzV9.MkwVp_wBCFZV5A3uBIb_W87an1DdKtyjsNUsEy04-C4'
+     ResponseSensor:
+      type: object
+      properties:
+        _id:
+          description: "_id asignado por MongoDB"
+          example: '5f3d45c43a1bf445846cbf76'
+          type: string
+        sensor:
+          example: 'hum'
+          enum: 
+            - hum
+            - pre
+            - lum
+            - tem]
+          type: string
+        fecha:
+          example: '2020-03-19T23:00:00.000Z'
+          type: string
+          format: date-time
+        valor:
+          type: number
+          example: 14.5
+     UserAuth:
+      type: object
+      properties:
+       email:
+        description: 'Correo eléctronico registrado'
+        example: 'email@mail.com'
+        type: string
+       password:
+        description: 'Contraseña registrada'
+        example:  ~$qwe@=q2e
+        type: string
+        format: password
+     CreateUser:
+      type: object
+      required:
+        - name
+        - email
+        - password
+        - role
+      properties:
+        name:
+          description: Nombre
+          example: Juan
+          type: string
+        email:
+          pattern: ^.+@.+$
+          type: string
+          example: juan@hotmail.com
+        password:
+          description: Contraseña alfanúmerica
+          example: '$2a$10$o8YaAiOFttpikqjF442voOm0WN9wT2xQvHxkXu5rC.Osd.Jomil/e'
+          type: string
+        role:
+          description: Nombre
+          example: member
+          type: string
+     UserRegister:
+      type: object
+      properties:
+        _id:
+          description: Nombre
+          example: '5f3c017a4dc03e5538513933'
+          type: string
+        username:
+          description: Nombre
+          example: Juan
+          type: string
+        email:
+          pattern: ^.+@.+$
+          type: string
+          example: juan@hotmail.com
+        password:
+          description: Contraseña alfanúmerica
+          example: 'asdasdasdasd.Osd.Jomil/e'
+          type: string
+        singupDate:
+          description: Fecha de registro del usuario
+          example: '2020-08-18T16:27:02.729Z'
+          type: string
+          format: date-time
+        role:
+          description: Permisos del usuario
+          enum:
+            - admin
+            - member
+          type: string
+     
+    
+     #Apartado User
+     User:
+      required:
+        - name
+        - email
+        - password
+        - role
+      properties:
+        _id:
+          type: string
+          description: >-
+            Nombre del usuario.
+          example: '5eb70b7bf929a6556c83a260'
+        name:
+          type: string
+          description: >-
+            Nombre del usuario.
+          example: 'Juan'
+        password:
+          type: string
+          description: >-
+            Contraseña usada para autenticarse.
+          example: '87s?sd!'
+        email:
+          type: string
+          description: >-
+            Formato de correo eletrónico muy bien definido, este se encuentra definido como addr_spec en el RFC_5322.
+          example: 'mail@mail.com'
+        singupDate:
+          type: string
+          pattern: '^\d{2}-\d{2}-\d{4}$'
+          description: >-
+            Fecha del usuario en la cuál es creado.
+          format: DateTimeString
+          example: '12-10-2020'
+        role:
+          type: string
+          enum:
+            - admin
+            - member
+          example: 'admin'
+     #Apartado Sensor
+     Sensor:
+      required:
+        - sensorTag
+        - sensor
+        - valor
+        - fecha
+      properties:
+        #_id:
+        #  type: string
+        #  description: >-
+        #    Es es automaticamente asignado por la base de datos (MongoDB).
+        #  example: '5eb6176ad71d2e0da86f8d62'
+        sensor:
+          type: string
+          description: >-
+            ID del sensor temperatura(tem), humedad(hum), luminosidad(lum), presión(pre).
+          enum:
+            - tem
+            - hum
+            - lum
+            - pre
+          example: 'tem'
+        sensorTag:
+          type: string
+          description: >-
+            ID del sensor temperatura(tem), humedad(hum), luminosidad(lum), presión(pre).
+          example: 'sen_cc2650_home'
+        valor:
+          type: number
+          description: >-
+            Fecha del usuario en la cuál fue su ultimo acceso.
+          example: 14.2
+        fecha:
+          type: string
+          pattern: '^\d{2}-\d{2}-\d{4}$'
+          description: >-
+            Fecha del usuario en la cuál fue su último acceso. 'MM-DD-YYYY'
+          format: DateTimeString
+          example: '2020-09-04T22:00:00.000Z'
+     #Apartado Autenticación
+     Authentication:
+      type: object
+      properties:
+        token:
+          type: string
+          description: JWT para autenticarse.
+          example: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1ZWI3MGI3YmY5MjlhNjU1NmM4M2EyNjAiLCJpYXQiOjE1ODkwNTQzMzIsImV4cCI6MTU5MDI2MzkzMn0.F4eo2jlBh0cdARSa4JREP8wt5RyP8ovhsW03hXQHP3k'
+     UserPassAuth:
+      type: object
+      properties:
+        Mensaje:
+          type: string
+          example: Usuario logeado correctamente
+        acessToken:
+          type: string
+          description: JWT para autenticarse.
+          example: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1ZjNmNjgzNjY2Y2VjMDZjODRlNGEyZjIiLCJyb2xlIjoidXNlciIsImlhdCI6MTU5ODI3ODM4NywiZXhwIjoxNTk4MzAzNTg3fQ.QVtVzUqDc172PqE8c9fDM-JYadrMgd2LP80WmMco7Mw'
+        refreshToken:
+          type: string
+          description: JWT para autenticarse.
+          example: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1ZjNmNjgzNjY2Y2VjMDZjODRlNGEyZjIiLCJyb2xlIjoidXNlciIsImlhdCI6MTU5ODI3ODM4N30.rwMQ2TLsnHBgq80KqIRZckcPICM4LpPNA_cuXRmOVvw'
+     NotAuthentication:
+      type: object
+      properties:
+        Mensaje:
+          type: string
+          example: 'No tienes autorización'
+     SensorID:
+      type: object
+      required:
+        - _id
+      properties:
+        _id:
+          type: string
+          description: >-
+            Es es automaticamente asignado por la base de datos (MongoDB).
+          example: '5eb6176ad71d2e0da86f8d62'
+
+  securitySchemes:
+    bearerAuth:           
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  
+  
