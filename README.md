@@ -1,2 +1,7 @@
-# TFM_API_Swagger_IoT_Bearer_v1
+# TFM API Swagger IoT Bearer v1
  
+
+
+Internet of Things (IoT) is a clearly disruptive technology in growth, with impact and capability unthinkable. One REST API’s role is a technology capable of tracking and in- terconnecting everything. For this reason it is important to introduce a secure API that allows to control and/or defense the infiltration of attackers in the network towards the IoT devices. A secure API represents a constant searching of vulnerabilities.
+Client-server communication channels are the way APIs suffer attacks that alter the state or functioning of the system. Secure the format of the requests, the types media of data received or the validation of these represent a response to possible risks that may alter API performance. Auditing API security under development, design or implementation makes it possible to ensure its optimum operation, through the application of proper practices and the use of security tools that allow these vulnerabilities to be discovered.
+In this final work (TFM) is developed an API with the goal of conducting a security audit and then ensure the system to possible attacks, avoiding the loss of data or altering them on the client side and server side. The audit will be implemented following OWASP best practices and making use of ZAP as a pentesting tool. OpenAPI Specification is also added to this project and is implemented to integrate the documentation through Swagger framework. Data acquisition is done by BLE from a generic sensor node connected to RED Node and sent using REST requests to the server, which stores all data in MongoDB. Node.js was employed for API development.
