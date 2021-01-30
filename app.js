@@ -411,24 +411,24 @@ app.use(function (req, res, next) {
 })
 
 
-/* app.use(cors())
+app.use(cors())
 app.use((req, res, next) => {
-  //res.setHeader("Content-Security-Policy", "script-src 'self' https://apis.google.com")
-  //res.header("Content-Type", "application/json")
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate')
-  res.setHeader('X-Content-Type-Options', 'nosniff')
-  res.setHeader('X-Frame-Options', 'SAMEORIGIN')
-  res.setHeader('Access-Control-Allow-Origin', 'true')
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization, X-API-KEY, Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Request-Method')
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE')
-  res.setHeader('Allow', 'GET, POST, PUT, DELETE')
+  res.header("Content-Security-Policy", "script-src 'self' https://apis.google.com")
+  res.header("Content-Type", "application/json")
+  res.header('Cache-Control', 'no-store, no-cache, must-revalidate')
+  res.header('X-Content-Type-Options', 'nosniff')
+  res.header('X-Frame-Options', 'SAMEORIGIN')
+  res.header('Access-Control-Allow-Origin', 'true')
+  res.header('Access-Control-Allow-Headers', 'Authorization, X-API-KEY, Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Request-Method')
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE')
+  res.header('Allow', 'GET, POST, PUT, DELETE')
   next()
-}) */
+})
 
 
-//app.use(helmet())
+app.use(helmet())
 
-/* app.use(helmet.contentSecurityPolicy());
+app.use(helmet.contentSecurityPolicy());
 app.use(helmet.dnsPrefetchControl());
 app.use(helmet.expectCt());
 app.use(helmet.frameguard());
@@ -439,26 +439,21 @@ app.use(helmet.noSniff());
 app.use(helmet.permittedCrossDomainPolicies());
 app.use(helmet.referrerPolicy());
 app.use(helmet.xssFilter());
- */
 
 
-
-/* app.use(
+app.use(
   helmet({
     contentSecurityPolicy: false,
   })
-) */
+)
 
 // BLOQUEA HTTP y SOLO USA HTTPS
 
 /* app.all('*', function(req, res, next){
-
   console.log('Solicitud (req) inicia: ', req.secure, req.hostname, req.url)
-
  if (req.secure) {
   return next()
  }  
-
  //res.redirect('https://'+req.hostname+':'+app.get('secPort')+req.url);
  
 })  
